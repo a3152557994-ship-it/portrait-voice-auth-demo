@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIGC 肖像与音色数字授权凭证核验中心 · MVP 原型</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --ink: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #0f4c81;
+      --brand-soft: #eff6ff;
+      --ok: #059669;
+      --ok-bg: #ecfdf5;
+      --warn: #d97706;
+      --warn-bg: #fffbeb;
+      --err: #dc2626;
+      --err-bg: #fef2f2;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      padding: 24px 16px 60px;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--brand); }
+    .badge-live {
+      font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+      background: var(--brand-soft); color: var(--brand); border: 1px solid #bfdbfe;
+    }
+    .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+    .tab-btn {
+      padding: 9px 18px; border-radius: 8px; border: 1px solid var(--line);
+      background: #fff; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--muted);
+    }
+    .tab-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 24px; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04); margin-bottom: 18px;
+    }
+    .search-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+    .search-row input {
+      flex: 1; min-width: 240px; padding: 11px 14px; border: 1px solid #cbd5e1;
+      border-radius: 8px; font-size: 15px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .btn {
+      padding: 11px 20px; border-radius: 8px; border: none; cursor: pointer;
+      font-weight: 600; font-size: 14px; background: var(--brand); color: #fff;
+    }
+    .btn-ghost {
+      background: #f8fafc; color: #334155; border: 1px solid var(--line);
+      padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;
+    }
+    .quick-samples { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+    .status-banner {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+      padding: 16px 18px; border-radius: 10px; margin-bottom: 18px;
+    }
+    .status-ok { background: var(--ok-bg); border: 1px solid #a7f3d0; color: #065f46; }
+    .status-exp { background: var(--warn-bg); border: 1px solid #fde68a; color: #92400e; }
+    .status-bad { background: var(--err-bg); border: 1px solid #fecaca; color: #991b1b; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 16px 0; }
+    .kv { padding: 12px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #eef2f7; }
+    .kv .k { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .kv .v { font-size: 14px; font-weight: 600; word-break: break-all; }
+    .sig-box {
+      background: #0f172a; color: #e2e8f0; padding: 14px 16px; border-radius: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; margin-top: 14px;
+    }
+    .sig-ok { color: #34d399; font-weight: 700; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 14px; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #374151; }
+    select, input[type="date"] {
+      width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #fff;
+    }
+    .rule-alert {
+      margin-top: 16px; padding: 14px 16px; border-radius: 10px; font-size: 14px;
+    }
+    .hidden { display: none; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .no-print { display: none !important; }
+      .card { box-shadow: none; border: 2px solid #111827; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar no-print">
+      <div class="brand">🛡️ 肖像与音色数字授权存证核验中心</div>
+      <span class="badge-live">公开免登录核验页 · Ed25519 验签原型</span>
+    </div>
+
+    <div class="tabs no-print">
+      <button class="tab-btn active" onclick="switchTab('verify', this)">① 公开凭证编号核验（免登录）</button>
+      <button class="tab-btn" onclick="switchTab('rules', this)">② 授权六要素互斥拦截校验演示</button>
+    </div>
+
+    <!-- TAB 1: PUBLIC VERIFICATION -->
+    <div id="tab-verify">
+      <div class="card no-print">
+        <h3 style="font-size:16px;">输入授权凭证编号（剧方 / 平台公开核验入口）</h3>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;">支持按编号实时查询三维人脸模型、克隆音色素材授权范围、起止有效期与服务端数字签名状态。</p>
+        <div class="search-row">
+          <input id="certInput" type="text" value="PV-2026-883921" placeholder="输入凭证编号，如 PV-2026-883921" />
+          <button class="btn" onclick="verifyCert()">立即核验</button>
+        </div>
+        <div class="quick-samples">
+          <span>一键测试样本：</span>
+          <button class="btn-ghost" onclick="loadSample('PV-2026-883921')">✅ 有效商业短剧授权</button>
+          <button class="btn-ghost" onclick="loadSample('PV-2025-104920')">⚠️ 已到期历史凭证</button>
+          <button class="btn-ghost" onclick="loadSample('PV-2026-999999')">❌ 伪造/无效编号</button>
+        </div>
+      </div>
+
+      <div id="certResult" class="card"></div>
+    </div>
+
+    <!-- TAB 2: 6-FACTOR MUTEX ENGINE -->
+    <div id="tab-rules" class="hidden">
+      <div class="card">
+        <h3 style="font-size:16px;">授权范围六要素组合校验器（互斥项实时自动拦截）</h3>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;">对应需求第 4 块：剧目类型、地域、媒介、商用属性、改编权限、转授权与期限组合逻辑校验。</p>
+        <div class="form-grid">
+          <div>
+            <label>1. 剧目类型</label>
+            <select id="f_drama" onchange="checkMutex()">
+              <option value="AIGC微短剧（单集≤5分钟）">AIGC微短剧（单集≤5分钟）</option>
+              <option value="品牌广告TVC">品牌广告 TVC</option>
+              <option value="内部测试样片（非公开）">内部测试样片（非公开）</option>
+            </select>
+          </div>
+          <div>
+            <label>2. 授权地域</label>
+            <select id="f_region" onchange="checkMutex()">
+              <option value="中国大陆地区">中国大陆地区</option>
+              <option value="海外（TikTok/Reels）">海外（TikTok / Reels）</option>
+              <option value="全球全渠道">全球全渠道</option>
+            </select>
+          </div>
+          <div>
+            <label>3. 传播媒介</label>
+            <select id="f_media" onchange="checkMutex()">
+              <option value="小程序/短视频流媒体">小程序 / 短视频流媒体</option>
+              <option value="院线与长视频平台">院线与长视频平台</option>
+              <option value="仅限企业内网审片">仅限企业内网审片</option>
+            </select>
+          </div>
+          <div>
+            <label>4. 商用属性</label>
+            <select id="f_comm" onchange="checkMutex()">
+              <option value="commercial">允许商业变现（投流/付费解锁）</option>
+              <option value="non_commercial">非商用（仅限测试/公益）</option>
+            </select>
+          </div>
+          <div>
+            <label>5. 二次改编权限</label>
+            <select id="f_adapt" onchange="checkMutex()">
+              <option value="script_only">仅限备案剧本台词合成（禁改人设）</option>
+              <option value="free_adapt">允许跨剧目自由改写台词与面部表情</option>
+            </select>
+          </div>
+          <div>
+            <label>6. 转授权与期限</label>
+            <select id="f_sub" onchange="checkMutex()">
+              <option value="no_sub_1y">禁止转授权 · 有效期 12 个月</option>
+              <option value="allow_sub_3y">允许分包转授权 · 有效期 36 个月</option>
+            </select>
+          </div>
+        </div>
+        <div id="mutexOutput" class="rule-alert"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DB = {
+      "PV-2026-883921": {
+        status: "VALID",
+        statusLabel: "已授权 · 有效期内（服务端签名验真通过）",
+        grantor: "林*然（实名与活体核验流水：ALI-FRP-20261102-9941，单独同意书已留痕归档）",
+        grantee: "杭州星芒数字短剧制作有限公司（统一社会信用代码：913301******882X）",
+        assets: [
+          "三维人脸高精模型：FACE-3D-LIN-V2（独立加密桶存储 · 配额 1/3）",
+          "克隆音色模型：VOICE-CLONE-LIN-CN01（只读锁定 · 青年女声·叙事向）"
+        ],
+        scope: {
+          drama: "AIGC微短剧《逆光回响》（备案单剧目绑定）",
+          region: "中国大陆地区 + 北美海外短剧投放",
+          media: "抖音 / 视频号 / ReelShort 流媒体端",
+          commercial: "允许商业付费解锁与信息流投流",
+          adaptation: "仅限备案剧本台词驱动，严禁涉政/低俗/医美虚假代言",
+          sublicense: "严禁转授权第三方剧组"
+        },
+        validFrom: "2026-11-01",
+        validUntil: "2027-10-31 23:59:59 (+08:00)",
+        auditLog: "后台审核通过（操作人：compliance_admin_02 · 2026-11-01 14:22:19）",
+        sigHash: "ed25519:8f9c2b4a71e0d3f8b5a19c7e42d08f116a93c4d2e7b80194f3a6c5d8e2b1704a",
+        publicKey: "MCowBQYDK2VwAyEAP5NCVP7CT0tgaGLSGMe4r87SjYRWTM6gN6igBZYSXys="
+      },
+      "PV-2025-104920": {
+        status: "EXPIRED",
+        statusLabel: "授权已到期（严禁新增成片发布与商业投流）",
+        grantor: "周*宇（实名活体流水：ALI-FRP-20250510-3318）",
+        grantee: "深圳快看互动文化传媒有限公司",
+        assets: [
+          "三维人脸模型：FACE-3D-ZHOU-V1",
+          "克隆音色模型：VOICE-CLONE-ZHOU-CN02（只读锁定）"
+        ],
+        scope: {
+          drama: "AIGC短剧《星河商战》第一季",
+          region: "中国大陆地区",
+          media: "微信小程序短剧剧场",
+          commercial: "允许商业变现（存续期历史剧集保留免责，禁新投）",
+          adaptation: "仅限原备案剧本",
+          sublicense: "禁止转授权"
+        },
+        validFrom: "2025-05-15",
+        validUntil: "2026-05-14 23:59:59 (+08:00)",
+        auditLog: "系统到期自动冻结（2026-05-15 00:00:02）",
+        sigHash: "ed25519:3a11d904c28e7f650b92e1d84c3f5a72109e8b4d6c5f1a2390b7e4c1d2f8a619",
+        publicKey: "MCowBQYDK2VwAyEAP5NCVP7CT0tgaGLSGMe4r87SjYRWTM6gN6igBZYSXys="
+      }
+    };
+
+    function switchTab(tab, btn) {
+      document.getElementById("tab-verify").classList.toggle("hidden", tab !== "verify");
+      document.getElementById("tab-rules").classList.toggle("hidden", tab !== "rules");
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      if (tab === "rules") checkMutex();
+    }
+
+    function loadSample(code) {
+      document.getElementById("certInput").value = code;
+      verifyCert();
+    }
+
+    function verifyCert() {
+      const code = document.getElementById("certInput").value.trim().toUpperCase();
+      const box = document.getElementById("certResult");
+      const rec = DB[code];
+      if (!rec) {
+        box.innerHTML = `
+          <div class="status-banner status-bad">
+            <div><strong>❌ 核验未通过：未查到有效授权凭证（${code || "空编号"}）</strong><div style="font-size:13px;margin-top:2px;">该编号不存在、已被授权人撤回或签名摘要不匹配，请勿用于剧集上线。</div></div>
+          </div>`;
+        return;
+      }
+      const cls = rec.status === "VALID" ? "status-ok" : "status-exp";
+      const icon = rec.status === "VALID" ? "✅" : "⚠️";
+      box.innerHTML = `
+        <div class="status-banner ${cls}">
+          <div>
+            <div style="font-size:16px;font-weight:700;">${icon} ${rec.statusLabel}</div>
+            <div style="font-size:12px;margin-top:3px;">凭证唯一编号：<strong>${code}</strong> ｜ 公开核验固定链接：<code>${location.origin}${location.pathname}?cert=${code}</code></div>
+          </div>
+          <button class="btn no-print" onclick="window.print()">📄 导出 / 打印 PDF 凭证</button>
+        </div>
+        <div class="grid">
+          <div class="kv"><div class="k">授权人（实名与活体留痕）</div><div class="v">${rec.grantor}</div></div>
+          <div class="kv"><div class="k">被授权剧方主体</div><div class="v">${rec.grantee}</div></div>
+          <div class="kv"><div class="k">授权有效期</div><div class="v">${rec.validFrom} 至 ${rec.validUntil}</div></div>
+          <div class="kv"><div class="k">绑定资产清单（原始素材与模型分离存储）</div><div class="v">${rec.assets.join("<br>")}</div></div>
+        </div>
+        <h4 style="font-size:14px;margin:14px 0 8px;color:#374151;">六要素授权范围核定明细</h4>
+        <div class="grid">
+          <div class="kv"><div class="k">1. 剧目类型</div><div class="v">${rec.scope.drama}</div></div>
+          <div class="kv"><div class="k">2. 授权地域</div><div class="v">${rec.scope.region}</div></div>
+          <div class="kv"><div class="k">3. 传播媒介</div><div class="v">${rec.scope.media}</div></div>
+          <div class="kv"><div class="k">4. 商用属性</div><div class="v">${rec.scope.commercial}</div></div>
+          <div class="kv"><div class="k">5. 改编边界</div><div class="v">${rec.scope.adaptation}</div></div>
+          <div class="kv"><div class="k">6. 转授权限制</div><div class="v">${rec.scope.sublicense}</div></div>
+        </div>
+        <div class="sig-box">
+          <div><span class="sig-ok">[SERVER SIGNATURE VERIFIED]</span> 算法：Ed25519 离线防篡改签名</div>
+          <div style="margin-top:4px;">签名摘要：${rec.sigHash}</div>
+          <div>平台验签公钥：${rec.publicKey}</div>
+          <div>合规审计留痕：${rec.auditLog}</div>
+        </div>
+      `;
+    }
+
+    function checkMutex() {
+      const drama = document.getElementById("f_drama").value;
+      const media = document.getElementById("f_media").value;
+      const comm = document.getElementById("f_comm").value;
+      const adapt = document.getElementById("f_adapt").value;
+      const sub = document.getElementById("f_sub").value;
+      const out = document.getElementById("mutexOutput");
+      const errors = [];
+
+      if (drama.includes("内部测试") && comm === "commercial") {
+        errors.push("互斥拦截 #1：「内部测试样片」严禁勾选「允许商业变现（投流/付费解锁）」。");
+      }
+      if (media.includes("内网审片") && comm === "commercial") {
+        errors.push("互斥拦截 #2：「仅限企业内网审片」媒介与「商业变现」冲突。");
+      }
+      if (comm === "non_commercial" && sub === "allow_sub_3y") {
+        errors.push("互斥拦截 #3：「非商用授权」严禁开启「允许分包转授权」。");
+      }
+      if (drama.includes("内部测试") && adapt === "free_adapt") {
+        errors.push("互斥拦截 #4：测试样片不可授予「跨剧目自由改写面部与台词」高风险权限。");
+      }
+
+      if (errors.length > 0) {
+        out.className = "rule-alert status-bad";
+        out.innerHTML = "<strong>🚫 互斥规则自动拦截（无法生成凭证）：</strong><ul style='margin:6px 0 0 18px;'>" +
+          errors.map(e => `<li>${e}</li>`).join("") + "</ul>";
+      } else {
+        out.className = "rule-alert status-ok";
+        out.innerHTML = "<strong>✅ 六要素组合合规校验通过！</strong> 可进入下一步生成 PDF 授权凭证并写入服务端 Ed25519 签名台账。（小提示：试着把「剧目类型」改为「内部测试样片」并保持「允许商业变现」，即可触发互斥自动拦截演示）";
+      }
+    }
+
+    const urlCert = new URLSearchParams(location.search).get("cert");
+    if (urlCert) document.getElementById("certInput").value = urlCert;
+    verifyCert();
+  </script>
+</body>
+</html>
